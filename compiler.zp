@@ -8,46 +8,54 @@
 
   (make-initial (lambda () #{:constants #{} :seq 0 :body ""}))
 
-  (compile-all (lambda (exprs) (reduce compile-expr (make-initial) exprs)))
+  (compile-all (lambda (state exprs) (reduce compile-expr state exprs)))
 
   (get-arg (lambda (state str)
-    (if (in? state str)
-      state
-      (let ((nstate (hash:update state
-                                 :constants
-                                 (lambda (constants) (hash:set constants str (state :seq))))))
-        (hash:update nstate :seq add1)))))
+    (cond
+      ((list? str) `(:sub ,(compile-expr state str)))
+      ((in? state str) `(:const ,state))
+      (else
+        (let ((nstate (hash:update state
+                                   :constants
+                                   (lambda (constants) (hash:set constants str (state :seq))))))
+          `(:const ,(hash:update nstate :seq add1)))))))
 
   (new-body-elem (lambda (index elem body)
     (++ body
-        "\tmovl\t$.LC" elem ","
+        "\tmovl\t" elem ","
         (if (> index 0) (->string (* index globals:PTR-SIZE)) "")
         "(%esp)\n")))
 
-  (update-body (lambda (acc elem)
-    (let ((updated-body (hash:update acc :body (curry new-body-elem (acc :index) (->string elem)))))
-      (hash:update updated-body :index add1))))
-
   (compile-expr (lambda (state expr)
-    (let* ((fun    (globals:translate (car expr)))
+    (let* ((fun    (->string (globals:translate (car expr))))
            (args   (cdr expr))
-           (nstate (reduce get-arg state args))
-           (stack  (globals:calculate-stacksize (length args)))
-           (nbody  (reduce update-body #{:body "" :index 0} (map (nstate :constants) args))))
-      (hash:update nstate :body (lambda (body)
-                      (++ body "\tsubl\t$" (->string stack) ",%esp\n"
-                               (nbody :body)
-                               "\tcall\t" (->string fun)
-                               "\n\taddl\t$" (->string stack) ", %esp"))))))
+           (stack  (globals:calculate-stacksize (length args))))
+      (if (eq? fun "begin")
+        (compile-all state (cdr expr))
+        (let ((state (hash:update state :body
+                                  ($ (++ % "\n\tsubl\t" (->string stack) ",%esp\n")))))
+          (begin
+            (indexed-map (lambda (y i)
+                          (let* ((ret    (get-arg state y))
+                                 (type   (car ret))
+                                 (nstate (cadr ret))
+                                 (param  (if (eq? type :const)
+                                           (++ "$.LC" (->string (get-from nstate `(:constants ,y))))
+                                           "%eax")))
+                            (set! state (hash:update nstate :body
+                                                     ($ (new-body-elem i param %))))))
+                         args)
+            (hash:update state :body ($ (++ % "\tcall\t" fun
+                                            "\n\taddl\t" (->string stack) ",%esp\n")))))))))
 
   (write-constants (lambda (state)
     (hash:kv-reduce (lambda (acc x)
                       (++ acc "\n.LC" (->string (cadr x)) ":\n\t.string \"" (car x) "\""))
-                    "\t.section\t.rodata"
+                    "\n\t.section\t.rodata"
                     (state :constants))))
 
   (compile (lambda (input)
-    (let ((state (compile-all input)))
+    (let ((state (compile-all (make-initial) input)))
         (++ globals:PROLOG
             (state :body)
             globals:EPILOG

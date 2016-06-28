@@ -31,7 +31,8 @@
   "        popl    %ecx
         popl    %ebp
         leal    -4(%ecx), %esp
-        ret")
+        ret
+")
 
   (glob-epilog ".size   main, .-main")
 
