@@ -1,0 +1,21 @@
+(load "cli/cli")
+(load "compiler")
+
+(import-all "cli")
+(import-all "compiler")
+
+(define (main from args)
+  (let ((to (get-from args "output" "out.s"))
+        (compiled (compiler:compile (parse from))))
+    (with-output-file to (lambda (f) (write compiled f)))))
+
+(define args #{:help "The silly zepto compiler compiles silly zepto programs."
+               :options #{"output" #{:short   "o"
+                                     :usage   "direct output to"}}
+               :arguments (("file"
+                            "the file that should be compiler"))})
+
+
+(define env (cli:create (list (cli:command "compile" main args))))
+
+(cli:play env #{:name "szc" :version "0.0.1"})

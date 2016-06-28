@@ -1,0 +1,38 @@
+(module "globals"
+  (export
+    `("translate" ,translate)
+    `("PROLOG" ,prolog)
+    `("EPILOG" ,epilog)
+    `("GLOB-EPILOG" ,glob-epilog)
+    `("PTR-SIZE" ,ptr-size)
+    `("calculate-stacksize" ,calculate-stacksize))
+
+  (translations #{"display" "puts"})
+
+  (translate (lambda (expr) (get-from translations (->string expr) expr)))
+
+  (calculate-stacksize
+    (lambda (nargs)
+      (+ (* (round (/ (* (+ nargs 0.5) ptr-size) (* 4 ptr-size))) (* 4 ptr-size)) ptr-size)))
+
+  (prolog
+  "    .text
+    .globl main
+        .type   main, @function
+    main:
+        leal    4(%esp), %ecx
+        andl    $-16, %esp
+        pushl   -4(%ecx)
+        pushl   %ebp
+        movl    %esp, %ebp
+        pushl   %ecx")
+
+  (epilog
+  "        popl    %ecx
+        popl    %ebp
+        leal    -4(%ecx), %esp
+        ret")
+
+  (glob-epilog ".size   main, .-main")
+
+  (ptr-size 4))
