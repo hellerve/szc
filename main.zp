@@ -5,9 +5,15 @@
 (import-all "compiler")
 
 (define (main from args)
-  (let ((to (get-from args "output" "out.s"))
-        (compiled (compiler:compile (parse from))))
-    (with-output-file to (lambda (f) (write compiled f)))))
+  (if (file-exists? from)
+    (let ((to (get-from args "output" "out.s"))
+          (compiled (compiler:compile (parse from))))
+      (begin
+        (with-output-file to (lambda (f) (write compiled f)))
+        (exit 0)))
+    (begin
+      (error "File" from "does not exist.")
+      (exit 1))))
 
 (define args #{:help "The silly zepto compiler compiles silly zepto programs."
                :options #{"output" #{:short "o"
