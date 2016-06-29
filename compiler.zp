@@ -23,7 +23,7 @@
   (new-body-elem (lambda (index elem body)
     (++ body
         "\tmovl\t" elem ","
-        (if (> index 0) (->string (* index globals:PTR-SIZE)) "")
+        (if (> index 0) (++ "$" (->string (* index globals:PTR-SIZE))) "")
         "(%esp)\n")))
 
   (compile-expr (lambda (state expr)
@@ -33,7 +33,7 @@
       (if (eq? fun "begin")
         (compile-all state (cdr expr))
         (let ((state (hash:update state :body
-                                  ($ (++ % "\n\tsubl\t" (->string stack) ",%esp\n")))))
+                                  ($ (++ % "\n\tsubl\t$" (->string stack) ",%esp\n")))))
           (begin
             (indexed-map (lambda (y i)
                           (let* ((ret    (get-arg state y))
@@ -46,7 +46,7 @@
                                                      ($ (new-body-elem i param %))))))
                          args)
             (hash:update state :body ($ (++ % "\tcall\t" fun
-                                            "\n\taddl\t" (->string stack) ",%esp\n")))))))))
+                                            "\n\taddl\t$" (->string stack) ",%esp\n")))))))))
 
   (write-constants (lambda (state)
     (hash:kv-reduce (lambda (acc x)

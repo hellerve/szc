@@ -1,1 +1,1 @@
-(printf "Hello, %s!" (foo "World"))
+(printf "Hello %s%s" "World" "!")
