@@ -1,0 +1,15 @@
+#{:name "szc" 
+  :version "0.0.1" 
+  :license "GPLv2" 
+  :tests []
+  :type :tool
+  :author #{:name "Veit Heller" 
+            :email "veit@veitheller.de" 
+            :github "@hellerve"}
+  :location #{:github "hellerve/szc" 
+              :zpr "szc"}
+  :zepto #{:version :any
+           :ez #f
+           :bz #f}
+  :dependencies ()
+  :dev-dependencies ()}
