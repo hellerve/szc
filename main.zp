@@ -10,8 +10,8 @@
     (with-output-file to (lambda (f) (write compiled f)))))
 
 (define args #{:help "The silly zepto compiler compiles silly zepto programs."
-               :options #{"output" #{:short   "o"
-                                     :usage   "direct output to"}}
+               :options #{"output" #{:short "o"
+                                     :help  "where the output should be written to (default: out.s)"}}
                :arguments (("file"
                             "the file that should be compiler"))})
 
